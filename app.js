@@ -3,7 +3,13 @@ const settingsDoc = db.collection('settings').doc('config');
 let allCandidates = [];
 let currentChart = null;
 let currentUser = null;
-let currentSettings = { votingEnabled: true, resultVisible: false, countdownEnd: null };
+let currentSettings = {
+  votingEnabled: true,
+  resultVisible: false,
+  countdownEnd: null,
+  votingStart: null,
+  votingEnd: null,
+};
 
 window.addEventListener('DOMContentLoaded', () => {
   applyDarkModeFromStorage();
@@ -41,15 +47,16 @@ function initLoginPage() {
   const adminLoginForm = document.getElementById('adminLoginForm');
   const loginBtn = document.getElementById('loginBtn');
   const adminLoginBtn = document.getElementById('adminLoginBtn');
+  const returnTo = new URLSearchParams(window.location.search).get('returnTo');
 
-  console.log('Elements found:', { userTab, adminTab, userLoginForm, adminLoginForm, loginBtn, adminLoginBtn });
+  console.log('Elements found:', { userTab, adminTab, userLoginForm, adminLoginForm, loginBtn, adminLoginBtn, returnTo });
 
   if (getUserSession()) {
-    console.log('User session found, redirecting to vote.html');
-    window.location.href = 'vote.html';
+    console.log('User session found, redirecting to return page or vote.html');
+    window.location.href = returnTo || 'vote.html';
     return;
   }
-  if (isAdminSession()) {
+  if (isAdminSession() && !returnTo) {
     console.log('Admin session found, redirecting to admin.html');
     window.location.href = 'admin.html';
     return;
@@ -204,7 +211,8 @@ function setupLogoutButtons() {
 function requireUserAuth() {
   const session = getUserSession();
   if (!session) {
-    window.location.href = 'index.html';
+    const page = window.location.pathname.split('/').pop();
+    window.location.href = `index.html?returnTo=${encodeURIComponent(page)}`;
     return null;
   }
   return session;
@@ -265,14 +273,27 @@ function updateVotingStatus() {
   const statusMessage = document.getElementById('statusMessage');
   if (!statusFlag || !statusMessage) return;
   const enabled = currentSettings.votingEnabled;
-  statusFlag.textContent = enabled ? 'Voting is enabled' : 'Voting is currently disabled';
-  statusMessage.textContent = enabled
-    ? currentUser.hasVoted
-      ? `You already voted for ${currentUser.votedCandidate || 'a candidate'}.`
-      : 'Choose a candidate and cast your vote.'
-    : 'Voting is paused. Please check back later.';
+  const now = new Date();
+  const start = currentSettings.votingStart ? new Date(currentSettings.votingStart) : null;
+  const end = currentSettings.votingEnd ? new Date(currentSettings.votingEnd) : null;
 
-  if (currentSettings.countdownEnd) {
+  if (start && now < start) {
+    statusFlag.textContent = 'Voting scheduled';
+    statusMessage.textContent = `Voting begins at ${start.toLocaleString()}.`;
+  } else if (end && now > end) {
+    statusFlag.textContent = 'Voting ended';
+    statusMessage.textContent = 'Voting has ended.';
+  } else if (!enabled) {
+    statusFlag.textContent = 'Voting is currently disabled';
+    statusMessage.textContent = 'Voting is paused. Please check back later.';
+  } else {
+    statusFlag.textContent = 'Voting is enabled';
+    statusMessage.textContent = currentUser.hasVoted
+      ? `You already voted for ${currentUser.votedCandidate || 'a candidate'}.`
+      : 'Choose a candidate and cast your vote.';
+  }
+
+  if (currentSettings.countdownEnd && new Date(currentSettings.countdownEnd) > now) {
     startCountdown(currentSettings.countdownEnd);
   }
 }
@@ -299,25 +320,74 @@ function startCountdown(endTimestamp) {
   window.voteCountdownTimer = setInterval(update, 1000);
 }
 
+function formatDatetimeLocal(dateValue) {
+  if (!dateValue) return '';
+  const date = new Date(dateValue);
+  if (isNaN(date)) return '';
+  const pad = (num) => String(num).padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
+function setVoteSchedule() {
+  const startValue = document.getElementById('voteStartTime').value;
+  const endValue = document.getElementById('voteEndTime').value;
+  if (!startValue || !endValue) {
+    alert('Please enter both a start time and an end time.');
+    return;
+  }
+
+  const votingStart = new Date(startValue);
+  const votingEnd = new Date(endValue);
+  if (isNaN(votingStart) || isNaN(votingEnd)) {
+    alert('Please enter a valid date and time for both fields.');
+    return;
+  }
+  if (votingStart >= votingEnd) {
+    alert('End time must be after start time.');
+    return;
+  }
+
+  settingsDoc
+    .update({
+      votingStart: votingStart.toISOString(),
+      votingEnd: votingEnd.toISOString(),
+      countdownEnd: votingEnd.toISOString(),
+    })
+    .then(() => {
+      alert('Voting schedule has been saved.');
+    })
+    .catch((error) => {
+      console.error('Unable to save voting schedule:', error);
+      alert('Unable to save voting schedule.');
+    });
+}
+
 function renderCandidateCards(candidates) {
   const container = document.getElementById('voteList');
   if (!container) return;
   const filtered = filterCandidateArray(candidates);
   container.innerHTML = filtered
     .map((candidate) => {
-      const disabled = currentUser.hasVoted || !currentSettings.votingEnabled;
-      const buttonLabel = currentUser.hasVoted
+      const now = new Date();
+      const start = currentSettings.votingStart ? new Date(currentSettings.votingStart) : null;
+      const end = currentSettings.votingEnd ? new Date(currentSettings.votingEnd) : null;
+      const notStarted = start && now < start;
+      const ended = end && now > end;
+      const scheduleInactive = notStarted || ended;
+      const disabled = currentUser.hasVoted || !currentSettings.votingEnabled || scheduleInactive;
+      let buttonLabel = currentUser.hasVoted
         ? currentUser.votedCandidate === candidate.name
           ? 'Voted'
           : 'Already Voted'
         : 'Vote Now';
+      if (!currentUser.hasVoted && scheduleInactive) {
+        buttonLabel = notStarted ? 'Starts soon' : 'Voting ended';
+      }
       return `
         <article class="candidate-card">
-          <img src="${candidate.imageURL || 'https://via.placeholder.com/220x220?text=Candidate'}" alt="${candidate.name}" />
           <div>
             <h3>${candidate.name}</h3>
             <p>${candidate.party}</p>
-            <p><strong>${candidate.votes || 0} votes</strong></p>
             <button class="btn btn-primary vote-btn" ${disabled ? 'disabled' : ''} onclick="confirmVote('${candidate.id}')">${buttonLabel}</button>
           </div>
         </article>`;
@@ -345,7 +415,10 @@ function filterCandidates() {
 }
 
 function confirmVote(candidateId) {
-  if (!currentUser || currentUser.hasVoted) return;
+  const now = new Date();
+  const start = currentSettings.votingStart ? new Date(currentSettings.votingStart) : null;
+  const end = currentSettings.votingEnd ? new Date(currentSettings.votingEnd) : null;
+  if (!currentUser || currentUser.hasVoted || !currentSettings.votingEnabled || (start && now < start) || (end && now > end)) return;
   const selected = allCandidates.find((item) => item.id === candidateId);
   if (!selected) return;
 
@@ -415,7 +488,6 @@ function renderDashboardResults(candidates) {
       const percent = totalVotes ? Math.round(((candidate.votes || 0) / totalVotes) * 100) : 0;
       return `
         <article class="candidate-card">
-          <img src="${candidate.imageURL || 'https://via.placeholder.com/220x220?text=Candidate'}" alt="${candidate.name}" />
           <div>
             <h3>${candidate.name}</h3>
             <p>${candidate.party}</p>
@@ -487,6 +559,8 @@ function initAdminPage() {
   fetchAdminStats();
 
   document.getElementById('addCandidateBtn').addEventListener('click', addCandidate);
+  document.getElementById('addStudentBtn').addEventListener('click', addStudent);
+  document.getElementById('setVoteScheduleBtn').addEventListener('click', setVoteSchedule);
   document.getElementById('toggleVotingBtn').addEventListener('click', toggleVoting);
   document.getElementById('toggleResultsBtn').addEventListener('click', toggleResults);
   document.getElementById('resetVotesBtn').addEventListener('click', resetAllVotes);
@@ -499,7 +573,6 @@ function renderAdminCandidateList(candidates) {
     .map((candidate) => {
       return `
         <article class="candidate-card">
-          <img src="${candidate.imageURL || 'https://via.placeholder.com/220x220?text=Candidate'}" alt="${candidate.name}" />
           <div>
             <h3>${candidate.name}</h3>
             <p>${candidate.party}</p>
@@ -517,39 +590,71 @@ function renderAdminCandidateList(candidates) {
 function addCandidate() {
   const name = document.getElementById('candidateName').value.trim();
   const party = document.getElementById('candidateParty').value.trim();
-  const imageElement = document.getElementById('candidateImage');
-  const file = imageElement.files[0];
 
-  if (!name || !party || !file) {
-    alert('Please fill all candidate fields and choose an image.');
+  if (!name || !party) {
+    alert('Please fill in candidate name and party.');
     return;
   }
 
-  const uploadTask = storage.ref(`candidate_images/${Date.now()}_${file.name}`).put(file);
-  uploadTask.on(
-    'state_changed',
-    null,
-    (error) => {
-      console.error('Storage upload failed:', error);
-      alert('Photo upload failed. Check Firebase Storage bucket and permissions.');
-    },
-    () => {
-      uploadTask.snapshot.ref.getDownloadURL().then((url) => {
-        db.collection('candidates')
-          .add({ name, party, imageURL: url, votes: 0 })
-          .then(() => {
-            document.getElementById('candidateName').value = '';
-            document.getElementById('candidateParty').value = '';
-            imageElement.value = '';
-            alert('Candidate added successfully.');
-          })
-          .catch((error) => {
-            console.error(error);
-            alert('Unable to add candidate.');
-          });
+  db.collection('candidates')
+    .add({ name, party, votes: 0 })
+    .then(() => {
+      document.getElementById('candidateName').value = '';
+      document.getElementById('candidateParty').value = '';
+      alert('Candidate added successfully.');
+    })
+    .catch((error) => {
+      console.error(error);
+      alert('Unable to add candidate.');
+    });
+}
+
+function addStudent() {
+  const name = document.getElementById('studentName').value.trim();
+  const rollNumber = document.getElementById('studentRoll').value.trim();
+  const aadhar = document.getElementById('studentAadhar').value.trim();
+  const dob = document.getElementById('studentDob').value;
+
+  if (!name || !rollNumber || !aadhar || !dob) {
+    alert('Please fill in all student fields.');
+    return;
+  }
+  if (!/^\d{12}$/.test(aadhar)) {
+    alert('Aadhaar number must be exactly 12 digits.');
+    return;
+  }
+
+  db.collection('users')
+    .where('rollNumber', '==', rollNumber)
+    .limit(1)
+    .get()
+    .then((snapshot) => {
+      if (!snapshot.empty) {
+        alert('A student with this roll number already exists.');
+        return Promise.reject('duplicate roll number');
+      }
+      return db.collection('users').add({
+        name,
+        rollNumber,
+        aadhar,
+        dob,
+        hasVoted: false,
+        votedCandidate: '',
       });
-    }
-  );
+    })
+    .then(() => {
+      document.getElementById('studentName').value = '';
+      document.getElementById('studentRoll').value = '';
+      document.getElementById('studentAadhar').value = '';
+      document.getElementById('studentDob').value = '';
+      alert('Student added successfully.');
+      fetchAdminStats();
+    })
+    .catch((error) => {
+      if (error === 'duplicate roll number') return;
+      console.error(error);
+      alert('Unable to add student.');
+    });
 }
 
 function editCandidate(candidateId) {
@@ -629,8 +734,19 @@ function resetAllVotes() {
 function updateAdminSettingsDisplay() {
   document.getElementById('adminVotingEnabled').textContent = currentSettings.votingEnabled ? 'Yes' : 'No';
   document.getElementById('adminResultsVisible').textContent = currentSettings.resultVisible ? 'Yes' : 'No';
+  document.getElementById('adminVotingStart').textContent = currentSettings.votingStart
+    ? new Date(currentSettings.votingStart).toLocaleString()
+    : '-';
+  document.getElementById('adminVotingEnd').textContent = currentSettings.votingEnd
+    ? new Date(currentSettings.votingEnd).toLocaleString()
+    : '-';
   document.getElementById('toggleVotingBtn').textContent = currentSettings.votingEnabled ? 'Disable Voting' : 'Enable Voting';
   document.getElementById('toggleResultsBtn').textContent = currentSettings.resultVisible ? 'Hide Results' : 'Show Results';
+
+  const voteStartInput = document.getElementById('voteStartTime');
+  const voteEndInput = document.getElementById('voteEndTime');
+  if (voteStartInput) voteStartInput.value = formatDatetimeLocal(currentSettings.votingStart);
+  if (voteEndInput) voteEndInput.value = formatDatetimeLocal(currentSettings.votingEnd);
 }
 
 function fetchAdminStats() {
@@ -644,3 +760,4 @@ function fetchAdminStats() {
     })
     .catch((error) => console.error(error));
 }
+
