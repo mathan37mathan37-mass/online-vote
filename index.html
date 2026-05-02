@@ -6,23 +6,6 @@
   <title>Online Voting System | Login</title>
   <link rel="stylesheet" href="style.css" />
 </head>
-Checking the navigation code and page links so I can fix the button behavior.
-
-Found the likely redirect logic; I’m checking vote.html too so we can verify exact behavior and fix it cleanly.
-
-Read vote.html
-
-Why it stays on the login page
-This is happening because the app is protecting those pages:
-
-vote.html requires a student login
-dashboard.html requires a login too
-admin.html requires an admin login
-In app.js, requireUserAuth() and requireAdminAuth() redirect to index.html when no session exists:
-
-requireUserAuth() redirects if getUserSession() is empty
-
-
 <body>
   <header class="hero-panel">
     <nav class="top-nav">
