@@ -12,7 +12,7 @@
     <nav class="top-nav">
       <a href="index.html" class="logo">VotePoll</a>
       <div class="nav-links">
-        <a href="index.html" class="nav-link">Login</a>
+      
         <a href="vote.html" class="nav-link">Vote</a>
         <a href="dashboard.html" class="nav-link">Dashboard</a>
         <a href="admin.html" class="nav-link active">Admin</a>
@@ -53,6 +53,14 @@
           <span>Results Visible</span>
           <strong id="adminResultsVisible">-</strong>
         </div>
+        <div class="stat-card">
+          <span>Voting Starts</span>
+          <strong id="adminVotingStart">-</strong>
+        </div>
+        <div class="stat-card">
+          <span>Voting Ends</span>
+          <strong id="adminVotingEnd">-</strong>
+        </div>
       </div>
 
       <div class="form-panel">
@@ -61,9 +69,25 @@
         <input type="text" id="candidateName" placeholder="Jane Doe" />
         <label>Party Name</label>
         <input type="text" id="candidateParty" placeholder="Progressive Party" />
-        <label>Profile Image</label>
-        <input type="file" id="candidateImage" accept="image/*" />
+        <label>Voting Start</label>
+        <input type="datetime-local" id="voteStartTime" />
+        <label>Voting End</label>
+        <input type="datetime-local" id="voteEndTime" />
+        <button id="setVoteScheduleBtn" class="btn btn-secondary">Set Voting Schedule</button>
         <button id="addCandidateBtn" class="btn btn-primary">Add Candidate</button>
+      </div>
+
+      <div class="form-panel">
+        <h2>Add New Student</h2>
+        <label>Student Name</label>
+        <input type="text" id="studentName" placeholder="John Doe" />
+        <label>Roll Number</label>
+        <input type="text" id="studentRoll" placeholder="2101CS001" />
+        <label>Aadhaar Number</label>
+        <input type="text" id="studentAadhar" placeholder="12-digit Aadhaar" maxlength="12" />
+        <label>Date of Birth</label>
+        <input type="date" id="studentDob" />
+        <button id="addStudentBtn" class="btn btn-secondary">Add Student</button>
       </div>
     </section>
 
