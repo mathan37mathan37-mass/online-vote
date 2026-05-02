@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Online Voting System | Login</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+Checking the navigation code and page links so I can fix the button behavior.
+
+Found the likely redirect logic; I’m checking vote.html too so we can verify exact behavior and fix it cleanly.
+
+Read vote.html
+
+Why it stays on the login page
+This is happening because the app is protecting those pages:
+
+vote.html requires a student login
+dashboard.html requires a login too
+admin.html requires an admin login
+In app.js, requireUserAuth() and requireAdminAuth() redirect to index.html when no session exists:
+
+requireUserAuth() redirects if getUserSession() is empty
+
+
+<body>
+  <header class="hero-panel">
+    <nav class="top-nav">
+      <a href="index.html" class="logo">VotePoll</a>
+      <div class="nav-links">
+        <a href="index.html" class="nav-link active">Login</a>
+        <a href="vote.html" class="nav-link">Vote</a>
+        <a href="dashboard.html" class="nav-link">Dashboard</a>
+        <a href="admin.html" class="nav-link">Admin</a>
+      </div>
+    </nav>
+    <div class="hero-content">
+      <div>
+        <p class="eyebrow">Secure college voting</p>
+        <h1>Vote safely with Roll Number, Aadhaar & DOB.</h1>
+        <p>Login now to access the ballot, view election results, or manage candidates as admin.</p>
+      </div>
+      <div class="hero-illustration"></div>
+    </div>
+  </header>
+
+  <main class="page-grid">
+    <section class="panel-card login-panel">
+      <div class="tab-buttons">
+        <button id="userTab" class="tab-button active">Student Login</button>
+        <button id="adminTab" class="tab-button">Admin Login</button>
+      </div>
+
+      <div id="userLoginForm" class="auth-form active">
+        <h2>Student Login</h2>
+        <label>College Roll Number</label>
+        <input type="text" id="rollNumber" placeholder="e.g. 2101CS001" />
+        <label>Aadhaar Number</label>
+        <input type="text" id="aadhar" placeholder="12-digit Aadhaar" maxlength="12" />
+        <label>Date of Birth</label>
+        <input type="date" id="dob" />
+        <button id="loginBtn" class="btn btn-primary">Login to Vote</button>
+      </div>
+
+      <div id="adminLoginForm" class="auth-form">
+        <h2>Admin Login</h2>
+        <label>Admin Email</label>
+        <input type="email" id="adminEmail" placeholder="admin@example.com" />
+        <label>Password</label>
+        <input type="password" id="adminPassword" placeholder="Secure password" />
+        <button id="adminLoginBtn" class="btn btn-secondary">Admin Sign In</button>
+      </div>
+
+      <p id="loginMessage" class="helper-text"></p>
+    </section>
+  </main>
+
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
+  <script src="firebase.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

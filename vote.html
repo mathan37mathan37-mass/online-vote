@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Online Voting System | Vote</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+  <header class="page-header">
+    <nav class="top-nav">
+      <a href="index.html" class="logo">VotePoll</a>
+      <div class="nav-links">
+        <a href="index.html" class="nav-link">Login</a>
+        <a href="vote.html" class="nav-link active">Vote</a>
+        <a href="dashboard.html" class="nav-link">Dashboard</a>
+        <a href="admin.html" class="nav-link">Admin</a>
+      </div>
+    </nav>
+  </header>
+
+  <main class="page-grid">
+    <section class="panel-card">
+      <div class="section-header">
+        <div>
+          <h1>Cast Your Vote</h1>
+          <p id="statusMessage">Loading your ballot...</p>
+        </div>
+        <div class="action-row">
+          <button id="darkModeToggle" class="btn btn-outline">Toggle Dark Mode</button>
+          <button id="logoutBtn" class="btn btn-secondary">Logout</button>
+        </div>
+      </div>
+
+      <div class="info-bar">
+        <span id="votingStatusFlag">Status: checking...</span>
+        <span id="countdownTimer">Voting ends in: --:--:--</span>
+      </div>
+
+      <div class="search-bar">
+        <input id="candidateSearch" type="search" placeholder="Search by candidate or party" />
+      </div>
+
+      <div id="voteList" class="card-grid"></div>
+    </section>
+  </main>
+
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
+  <script src="firebase.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

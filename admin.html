@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Online Voting System | Admin Panel</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+  <header class="page-header">
+    <nav class="top-nav">
+      <a href="index.html" class="logo">VotePoll</a>
+      <div class="nav-links">
+        <a href="index.html" class="nav-link">Login</a>
+        <a href="vote.html" class="nav-link">Vote</a>
+        <a href="dashboard.html" class="nav-link">Dashboard</a>
+        <a href="admin.html" class="nav-link active">Admin</a>
+      </div>
+    </nav>
+  </header>
+
+  <main class="page-grid admin-grid">
+    <section class="panel-card admin-panel">
+      <div class="section-header">
+        <div>
+          <h1>Admin Control Center</h1>
+          <p>Manage candidates, voting state, and election results.</p>
+        </div>
+        <button id="logoutBtn" class="btn btn-secondary">Logout</button>
+      </div>
+
+      <div class="settings-row">
+        <button id="toggleVotingBtn" class="btn btn-primary">Toggle Voting</button>
+        <button id="toggleResultsBtn" class="btn btn-outline">Toggle Results</button>
+        <button id="resetVotesBtn" class="btn btn-danger">Reset All Votes</button>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-card">
+          <span>Total Registered Voters</span>
+          <strong id="adminTotalVoters">0</strong>
+        </div>
+        <div class="stat-card">
+          <span>Total Votes Cast</span>
+          <strong id="adminTotalVotes">0</strong>
+        </div>
+        <div class="stat-card">
+          <span>Voting Enabled</span>
+          <strong id="adminVotingEnabled">-</strong>
+        </div>
+        <div class="stat-card">
+          <span>Results Visible</span>
+          <strong id="adminResultsVisible">-</strong>
+        </div>
+      </div>
+
+      <div class="form-panel">
+        <h2>Add New Candidate</h2>
+        <label>Candidate Name</label>
+        <input type="text" id="candidateName" placeholder="Jane Doe" />
+        <label>Party Name</label>
+        <input type="text" id="candidateParty" placeholder="Progressive Party" />
+        <label>Profile Image</label>
+        <input type="file" id="candidateImage" accept="image/*" />
+        <button id="addCandidateBtn" class="btn btn-primary">Add Candidate</button>
+      </div>
+    </section>
+
+    <section class="panel-card">
+      <h2>Candidate Management</h2>
+      <div id="adminCandidateList" class="card-grid"></div>
+    </section>
+  </main>
+  
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
+  <script src="firebase.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
